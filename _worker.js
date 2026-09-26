@@ -11,7 +11,7 @@ async function sha256(message) {
 }
 
 // --- 2. Logo & Branding Assets ---
-const LOGO_MARK = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Gallery Logo" class="logo-svg"><rect width="64" height="64" rx="14" fill="#070B12"/><path class="m-back" d="M19.57 52.57V24.29C19.57 15.29 26.86 8 35.86 8C44.85 8 52.14 15.29 52.14 24.29V52.57Z" fill="none" stroke="#2E4A66" stroke-width="1.4"/><path class="m-front" d="M11.86 56V27.71C11.86 18.72 19.15 11.43 28.14 11.43C37.14 11.43 44.43 18.72 44.43 27.71V56Z" fill="#070B12" stroke="#BFE9FF" stroke-width="2" pathLength="1"/><path class="m-photo" d="M14.86 53V27.71C14.86 20.38 20.81 14.43 28.14 14.43C35.48 14.43 41.43 20.38 41.43 27.71V53Z" fill="#8FD3F4"/><path class="m-sun" d="M37.57 28.57C37.57 30.47 36.04 32 34.14 32C32.25 32 30.71 30.47 30.71 28.57C30.71 26.68 32.25 25.14 34.14 25.14C36.04 25.14 37.57 26.68 37.57 28.57Z" fill="#DC143C"/><path class="m-far" d="M14.86 44C20 37.14 25.14 35.43 30.29 39.71C34.57 43.14 38 41.43 41.43 38V53H14.86Z" fill="#4FA3D1"/><path class="m-near" d="M14.86 53V46.57C20.86 43.14 26.86 44.86 32 48.29C35.43 50.43 38.86 49.14 41.43 47.43V53Z" fill="#123A5E"/></svg>`;
+const LOGO_MARK = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Gallery Logo" class="logo-svg"><rect width="64" height="64" rx="14" fill="#070B12"/><path class="m-back" d="M19.57 52.57V24.29C19.57 15.29 26.86 8 35.86 8C44.85 8 52.14 15.29 52.14 24.29V52.57Z" fill="none" stroke="#2E4A66" stroke-width="1.4"/><path class="m-front" d="M11.86 56V27.71C11.86 18.72 19.15 11.43 28.14 11.43C37.14 11.43 44.43 18.72 44.43 27.71V56Z" fill="#070B12" stroke="#BFE9FF" stroke-width="2" pathLength="1"/><path class="m-photo" d="M14.86 53V27.71C14.86 20.38 20.81 14.43 28.14 14.43C35.48 14.43 41.43 20.38 41.43 27.71V53Z" fill="#8FD3F4"/><path class="m-sun" d="M37.57 28.57C37.57 30.47 36.04 32 34.14 32C32.25 32 30.71 30.47 30.71 28.57C30.71 26.68 32.25 25.14 34.14 25.14C36.04 25.14 37.57 26.68 37.57 28.57Z" fill="#DC143C"/><path class="m-far" d="M14.86 44C20 37.14 25.14 35.43 30.29 39.71C34.57 43.14 38 41.43 38V53H14.86Z" fill="#4FA3D1"/><path class="m-near" d="M14.86 53V46.57C20.86 43.14 26.86 44.86 32 48.29C35.43 50.43 38.86 49.14 41.43 47.43V53Z" fill="#123A5E"/></svg>`;
 
 const LOGO_CSS = `
 .logo-svg { display:block; width:100%; height:100%; filter:drop-shadow(0 15px 25px rgba(0,0,0,0.6)); }
@@ -159,7 +159,7 @@ export default {
         });
         
         self.addEventListener('fetch', (e) => {
-          if (e.request.method !== 'GET' || e.request.url.includes('/cdn/')) return;
+          if (e.request.method !== 'GET' || e.request.url.includes('/cdn/') || e.request.url.includes('api=true')) return;
           e.respondWith(
             fetch(e.request).catch(() => caches.match(e.request).then(res => res || new Response('Offline - Please connect to internet', {status: 503})))
           );
@@ -225,20 +225,30 @@ export default {
       return new Response(renderLoginHTML(false, siteTitle, siteSubtitle, ""), { headers: getSecureHeaders() });
     }
 
-    // 5. Main Gallery Rendering
+    // 5. Main Gallery Rendering (Optimized with Pagination)
     if (url.pathname === '/') {
       
       if (albumQuery) {
-        let allObjects = [];
-        let cursor = undefined;
-        do {
-          const listed = await env.GALLERY_BUCKET.list({ prefix: `${albumQuery}/`, cursor });
-          allObjects.push(...listed.objects);
-          cursor = listed.truncated ? listed.cursor : undefined;
-        } while (cursor);
+        const cursor = url.searchParams.get('cursor');
+        const isApi = url.searchParams.get('api') === 'true';
+
+        // Load 30 images per page to ensure fast load and smooth scrolling
+        const listed = await env.GALLERY_BUCKET.list({ 
+            prefix: `${albumQuery}/`, 
+            cursor: cursor || undefined,
+            limit: 30 
+        });
         
-        const images = allObjects.filter(obj => obj.size > 0).map(obj => obj.key);
-        return new Response(renderAppHTML(siteTitle, siteSubtitle, [], { [albumQuery]: images }, albumQuery), { headers: getSecureHeaders() });
+        const images = listed.objects.filter(obj => obj.size > 0).map(obj => obj.key);
+        const nextCursor = listed.truncated ? listed.cursor : null;
+
+        if (isApi) {
+            return new Response(JSON.stringify({ images, nextCursor }), { 
+                headers: { 'Content-Type': 'application/json' } 
+            });
+        }
+        
+        return new Response(renderAppHTML(siteTitle, siteSubtitle, [], { [albumQuery]: { images, hasMore: !!nextCursor } }, albumQuery, nextCursor), { headers: getSecureHeaders() });
       
       } else {
         const listed = await env.GALLERY_BUCKET.list({ delimiter: '/' });
@@ -251,26 +261,24 @@ export default {
           const folderName = folderPath.replace(/\/$/, '');
 
           if (folderName === 'Header') {
-             const allHeadersList = await env.GALLERY_BUCKET.list({ prefix: folderPath });
+             const allHeadersList = await env.GALLERY_BUCKET.list({ prefix: folderPath, limit: 10 });
              headerImages.push(...allHeadersList.objects.filter(o => o.size > 0).map(o => o.key));
              return;
           }
 
-          let folderObjects = [];
-          let folderCursor = undefined;
-          do {
-            const page = await env.GALLERY_BUCKET.list({ prefix: folderPath, cursor: folderCursor });
-            folderObjects.push(...page.objects);
-            folderCursor = page.truncated ? page.cursor : undefined;
-          } while (folderCursor);
-
-          const images = folderObjects.filter(o => o.size > 0).map(o => o.key);
+          // Fetch limit to 1000 items to avoid CPU Timeout on gigantic folders
+          const page = await env.GALLERY_BUCKET.list({ prefix: folderPath, limit: 1000 });
+          const images = page.objects.filter(o => o.size > 0).map(o => o.key);
+          
           if (images.length > 0) {
-             albums[folderName] = images;
+             albums[folderName] = {
+                 images: images,
+                 hasMore: page.truncated
+             };
           }
         }));
 
-        return new Response(renderAppHTML(siteTitle, siteSubtitle, headerImages, albums, null), { headers: getSecureHeaders() });
+        return new Response(renderAppHTML(siteTitle, siteSubtitle, headerImages, albums, null, null), { headers: getSecureHeaders() });
       }
     }
 
@@ -484,9 +492,10 @@ function renderLoginHTML(hasError, title, subtitle, errorMsg) {
   `;
 }
 
-function renderAppHTML(title, subtitle, headerImages, albums, currentAlbum) {
-  const isAlbumView = currentAlbum && albums[currentAlbum];
-  const currentAlbumImages = isAlbumView ? albums[currentAlbum] : [];
+function renderAppHTML(title, subtitle, headerImages, albumsData, currentAlbum, nextCursor) {
+  const isAlbumView = currentAlbum !== null;
+  const currentAlbumData = isAlbumView ? albumsData[currentAlbum] : { images: [] };
+  const currentAlbumImages = currentAlbumData.images || [];
   
   const heroImagesHTML = headerImages.map((key, index) => 
     `<img data-hero src="/cdn/${encodeURIComponent(key)}" class="${index === 0 ? 'active' : ''}" alt="Hero Image">`
@@ -508,44 +517,52 @@ function renderAppHTML(title, subtitle, headerImages, albums, currentAlbum) {
         <a href="/" class="back-btn magnetic"><span>&#8592;</span> Back to Collections</a>
         <h2 class="album-title">${currentAlbum.toUpperCase()}</h2>
       </div>
-      <div class="masonry-grid">
+      <div class="masonry-grid" id="masonry-grid">
         ${currentAlbumImages.length > 0 ? currentAlbumImages.map((key, index) => `
           <div class="masonry-item fade-in-up magnetic-card" style="animation-delay: ${(index % 10) * 0.05}s">
             <div class="skeleton"></div>
-            <!-- Using data-src for Lazy Loading -->
-            <img data-src="/cdn/${encodeURIComponent(key)}" data-idx="${index}" alt="${currentAlbum} image" oncontextmenu="return false;" draggable="false">
+            <img data-src="/cdn/${encodeURIComponent(key)}" loading="lazy" data-idx="${index}" alt="${currentAlbum} image" oncontextmenu="return false;" draggable="false">
           </div>
         `).join('') : emptyStateHTML}
+        
+        <!-- Pagination / Load More Integration -->
+        ${nextCursor ? `
+          <div id="load-more-container" style="text-align: center; margin-top: 40px; width: 100%; grid-column: 1 / -1; display: flex; justify-content: center; align-items: center; padding-bottom: 20px;">
+            <button id="load-more-btn" data-cursor="${nextCursor}" data-album="${currentAlbum}" class="magnetic">Load More</button>
+          </div>
+        ` : `<div id="load-more-container" style="display:none;"></div>`}
       </div>
     `;
   } else {
     let foldersHTML = '';
     let totalPhotos = 0;
     let i = 0;
-    for (const [folder, keys] of Object.entries(albums)) {
+    for (const [folder, data] of Object.entries(albumsData)) {
+      const keys = data.images;
       const coverImg = keys[0]; 
       const photoCount = keys.length;
+      const plus = data.hasMore ? '+' : '';
       totalPhotos += photoCount;
       foldersHTML += `
         <a href="/?album=${encodeURIComponent(folder)}" class="folder-card fade-in-up magnetic-card" style="animation-delay: ${i * 0.1}s">
           <div class="folder-img-wrapper">
             <div class="skeleton"></div>
-            <img data-src="/cdn/${encodeURIComponent(coverImg)}" alt="${folder} cover" oncontextmenu="return false;" draggable="false">
+            <img data-src="/cdn/${encodeURIComponent(coverImg)}" loading="lazy" alt="${folder} cover" oncontextmenu="return false;" draggable="false">
           </div>
           <div class="folder-info">
             <h3>${folder.toUpperCase()}</h3>
-            <span class="folder-count">${photoCount} Photo${photoCount === 1 ? '' : 's'}</span>
+            <span class="folder-count">${photoCount}${plus} Photo${photoCount === 1 && !data.hasMore ? '' : 's'}</span>
           </div>
         </a>
       `;
       i++;
     }
     
-    const folderCount = Object.keys(albums).length;
+    const folderCount = Object.keys(albumsData).length;
     contentHTML += `
       <div class="section-header fade-in">
         <h2 class="section-title">Curated Collections</h2>
-        <p class="section-meta">${folderCount} Collection${folderCount === 1 ? '' : 's'} &middot; ${totalPhotos} Photo${totalPhotos === 1 ? '' : 's'} Total</p>
+        <p class="section-meta">${folderCount} Collection${folderCount === 1 ? '' : 's'} &middot; ${totalPhotos}+ Photo${totalPhotos === 1 ? '' : 's'} Total</p>
       </div>
       <div class="folder-grid">
         ${foldersHTML || emptyStateHTML}
@@ -738,6 +755,17 @@ function renderAppHTML(title, subtitle, headerImages, albums, currentAlbum) {
       .masonry-item::after { content: ''; position: absolute; top:0; left:0; width:100%; height:100%; z-index: 2; pointer-events: none; box-shadow: inset 0 0 20px rgba(0,0,0,0.3); transition: box-shadow 0.4s ease; }
       .masonry-item:hover::after { box-shadow: inset 0 0 0 rgba(0,0,0,0); }
 
+      /* Load More Button Styles */
+      #load-more-btn {
+        background: rgba(143,211,244,0.1); color: var(--brand-white); padding: 15px 40px; border-radius: 25px; 
+        border: 1px solid rgba(143,211,244,0.3); font-family: 'Montserrat', sans-serif; cursor: none; 
+        letter-spacing: 2px; text-transform: uppercase; font-size: 0.8rem; transition: all 0.3s ease;
+      }
+      #load-more-btn:hover { 
+        background: var(--brand-blue); color: #04070a; box-shadow: 0 10px 25px rgba(143,211,244,0.4); 
+        border-color: var(--brand-blue); transform: translateY(-3px); 
+      }
+
       .lightbox { 
         position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
         background: radial-gradient(circle at center, rgba(46,74,102,0.85) 0%, rgba(4,7,10,0.98) 100%); 
@@ -876,6 +904,7 @@ function renderAppHTML(title, subtitle, headerImages, albums, currentAlbum) {
       let imagesData = [];
       let heroInterval, parallaxRAF, cursorRAF;
       let activeObservers = [];
+      let imageObserver;
 
       /* --- CORE APP LOGIC --- */
       function initApp() {
@@ -884,7 +913,7 @@ function renderAppHTML(title, subtitle, headerImages, albums, currentAlbum) {
         
         // 1. Intersection Observer for Lazy Loading
         const lazyImages = document.querySelectorAll('img[data-src]');
-        const imageObserver = new IntersectionObserver((entries, observer) => {
+        imageObserver = new IntersectionObserver((entries, observer) => {
           entries.forEach(entry => {
             if (entry.isIntersecting) {
               const img = entry.target;
@@ -909,6 +938,60 @@ function renderAppHTML(title, subtitle, headerImages, albums, currentAlbum) {
         document.querySelectorAll('.masonry-item img').forEach(img => {
           img.onclick = () => openLightbox(parseInt(img.dataset.idx));
         });
+
+        // 2.1 Setup Load More Pagination Logic
+        const loadMoreBtn = document.getElementById('load-more-btn');
+        if (loadMoreBtn) {
+            loadMoreBtn.onclick = async (e) => {
+                e.preventDefault();
+                const cursor = loadMoreBtn.dataset.cursor;
+                const album = loadMoreBtn.dataset.album;
+                const originalText = loadMoreBtn.innerText;
+                loadMoreBtn.innerText = 'LOADING...';
+                loadMoreBtn.style.opacity = '0.5';
+                
+                try {
+                    const res = await fetch(\`/?album=\${encodeURIComponent(album)}&cursor=\${encodeURIComponent(cursor)}&api=true\`);
+                    if (!res.ok) throw new Error('Network error');
+                    const data = await res.json();
+                    
+                    const grid = document.getElementById('masonry-grid');
+                    const containerElement = document.getElementById('load-more-container');
+                    
+                    data.images.forEach(src => {
+                        const idx = imagesData.length;
+                        imagesData.push(src);
+                        
+                        const div = document.createElement('div');
+                        div.className = 'masonry-item fade-in-up magnetic-card';
+                        div.innerHTML = \`<div class="skeleton"></div><img data-src="/cdn/\${encodeURIComponent(src)}" loading="lazy" data-idx="\${idx}" alt="image" oncontextmenu="return false;" draggable="false">\`;
+                        
+                        grid.insertBefore(div, containerElement);
+                        
+                        const img = div.querySelector('img');
+                        imageObserver.observe(img);
+                        activeObservers.push({ obs: imageObserver, el: img });
+                        
+                        img.onclick = () => openLightbox(idx);
+                    });
+                    
+                    if (data.nextCursor) {
+                        loadMoreBtn.dataset.cursor = data.nextCursor;
+                        loadMoreBtn.innerText = originalText;
+                        loadMoreBtn.style.opacity = '1';
+                    } else {
+                        containerElement.style.display = 'none';
+                    }
+                    
+                    if (isGalleryOpen) initGallery();
+                    
+                } catch (err) {
+                    loadMoreBtn.innerText = 'ERROR. TRY AGAIN';
+                    loadMoreBtn.style.opacity = '1';
+                    setTimeout(() => loadMoreBtn.innerText = originalText, 3000);
+                }
+            };
+        }
 
         // 3. Hero Interval setup
         clearInterval(heroInterval);
@@ -1142,7 +1225,7 @@ function renderAppHTML(title, subtitle, headerImages, albums, currentAlbum) {
         isGalleryOpen = true; 
         lightbox.classList.add('active'); 
         document.body.style.overflow = 'hidden'; 
-        if (thumbStrip.children.length === 0) initGallery(); 
+        if (thumbStrip.children.length !== imagesData.length) initGallery(); 
         showUI(); 
         goToImage(idx, true); 
       }
