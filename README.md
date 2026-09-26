@@ -68,3 +68,20 @@ GALLERY_BUCKET/
 └── Portraits/
     ├── portrait-1.jpg
     └── portrait-2.jpg
+
+---
+
+## ⚖️ License & Intellectual Property
+
+**AMBER ROOM · Ultra-Premium Secure Gallery** is an independent architectural masterpiece conceptualized and engineered by **Thiha Aung (Yone Man)**.
+
+### 📜 Usage Rights & Restrictions
+- **Personal & Educational Use:** Developers are highly encouraged to fork, study the edge-computing architecture, and deploy this system for strictly personal, non-commercial vaults.
+- **Attribution Mandate:** Any public deployment, modification, or inspiration drawn from this source code MUST unequivocally retain the original creator's credits (`Created by Thiha Aung`) within the UI and source files.
+- **Commercial Prohibition:** Unauthorized commercial distribution, enterprise repackaging, reselling as a service (SaaS), or white-labeling this codebase without explicit written consent is strictly prohibited.
+
+### 🛡️ Zero-Liability Security Disclaimer
+This system leverages state-of-the-art edge security protocols (SHA-256 cryptographic hashing, KV-based brute-force mitigation). However, this software is provided **"as is"**, without warranty of any kind. The architect and original creator assumes zero liability for any data exposure, unauthorized vault access, or consequences arising from misconfigured Cloudflare environments.
+
+> **Copyright © 2026 Thiha Aung (Yone Man). All Rights Reserved.** <br>
+> *For standard open-source terms, please review the associated `LICENSE` file.*
