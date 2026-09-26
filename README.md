@@ -4,8 +4,7 @@ AMBER ROOM: A cinematic, high-resolution secure vault. Built natively on Cloudfl
 # 💎 AMBER ROOM · Ultra-Premium Secure Gallery
 
 <div align="center">
-  <!-- ဒီနေရာမှာ logo.gif ဆိုတာလေးကို အစ်ကိုတင်ထားတဲ့ ဖိုင်နာမည် ပြောင်းပေးပါ -->
-  <img src="logo.gif" alt="Amber Room Logo" width="160" style="border-radius: 50%; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+  <img src="logo.gif" alt="Amber Room Logo" width="300">
   
   <h1>💎 AMBER ROOM · Ultra-Premium Secure Gallery</h1>
   
@@ -36,22 +35,20 @@ Configure the following bindings under **Settings > Functions > Variables & Bind
 
 | Binding Type | Variable Name | Required | Description |
 | :--- | :--- | :--- | :--- |
-| **R2 Bucket** | \`GALLERY_BUCKET\` | Yes | Target R2 bucket storing all curated gallery photographs and hero assets. |
-| **KV Namespace** | \`CONFIG_KV\` | Yes | Key-Value store managing passwords, branding configuration, and brute-force rate limits. |
+| **R2 Bucket** | `GALLERY_BUCKET` | Yes | Target R2 bucket storing all curated gallery photographs and hero assets. |
+| **KV Namespace** | `CONFIG_KV` | Yes | Key-Value store managing passwords, branding configuration, and brute-force rate limits. |
 
 ---
 
-## 🔑 KV Namespace Records (\`CONFIG_KV\`)
+## 🔑 KV Namespace Records (`CONFIG_KV`)
 
 Add the following exact keys to your bound KV Namespace to control the gallery:
 
 | Key | Type | Default Value | Description |
 | :--- | :--- | :--- | :--- |
-| \`PASSWORD\` | String | \`admin123\` | Master passphrase required to unlock the gallery vault. |
-| \`SITE_TITLE\` | String | \`AMBER\` | Primary branding display text on the header. |
-| \`SITE_SUBTITLE\` | String | \`ROOM\` | Secondary accent title shown below the brand mark. |
-
-*(Note: The system automatically generates \`rl_<IP>\` keys to track brute-force attempts. Do not add these manually.)*
+| `PASSWORD` | String | `admin123` | Master passphrase required to unlock the gallery vault. |
+| `SITE_TITLE` | String | `AMBER` | Primary branding display text on the header. |
+| `SITE_SUBTITLE` | String | `ROOM` | Secondary accent title shown below the brand mark. |
 
 ---
 
