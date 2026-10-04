@@ -311,6 +311,10 @@ function renderLoginHTML(hasError, title, subtitle, errorMsg) {
     <link rel="apple-touch-icon" href="/favicon.svg">
     <title>${title} ${subtitle} - Login</title>
     <link href="https://fonts.googleapis.com/css2?family=GFS+Baskerville&family=Montserrat:wght@200;300;400;500&display=swap" rel="stylesheet">
+    <script>
+      // Disable Context Menu Globally
+      document.addEventListener('contextmenu', e => e.preventDefault());
+    </script>
     <style>
       ${LOGO_CSS}
       :root { 
@@ -327,6 +331,7 @@ function renderLoginHTML(hasError, title, subtitle, errorMsg) {
         margin: 0; padding: 0; width: 100%; height: 100%; 
         color: var(--brand-white); font-family: 'Montserrat', sans-serif; 
         overflow: hidden; background-color: transparent; 
+        -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
       }
       
       .custom-cursor { 
@@ -390,6 +395,7 @@ function renderLoginHTML(hasError, title, subtitle, errorMsg) {
         padding: 18px 20px; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 0.95rem; font-weight: 300;
         outline: none; transition: all 0.4s ease; text-align: center; letter-spacing: 4px;
         box-shadow: inset 0 2px 10px rgba(0,0,0,0.6); margin-bottom: 25px;
+        -webkit-user-select: auto; user-select: auto;
       }
       input[type="password"]:focus { 
         border-color: var(--brand-blue); background: rgba(7,11,18,0.9);
@@ -498,7 +504,7 @@ function renderAppHTML(title, subtitle, headerImages, albumsData, currentAlbum, 
   const currentAlbumImages = currentAlbumData.images || [];
   
   const heroImagesHTML = headerImages.map((key, index) => 
-    `<img data-hero src="/cdn/${encodeURIComponent(key)}" class="${index === 0 ? 'active' : ''}" alt="Hero Image">`
+    `<img data-hero src="/cdn/${encodeURIComponent(key)}" class="${index === 0 ? 'active' : ''}" alt="Hero Image" oncontextmenu="return false;" draggable="false">`
   ).join('');
 
   let contentHTML = '';
@@ -588,6 +594,9 @@ function renderAppHTML(title, subtitle, headerImages, albumsData, currentAlbum, 
     <link href="https://fonts.googleapis.com/css2?family=GFS+Baskerville&family=Montserrat:wght@200;300;400;500&display=swap" rel="stylesheet">
     
     <script>
+      // Disable Context Menu Globally
+      document.addEventListener('contextmenu', e => e.preventDefault());
+
       const navEntries = performance.getEntriesByType("navigation");
       if (navEntries.length > 0 && navEntries[0].type === "reload") {
           window.location.replace("/logout");
@@ -615,6 +624,7 @@ function renderAppHTML(title, subtitle, headerImages, albumsData, currentAlbum, 
         margin: 0; padding: 0; width: 100%; height: 100%; 
         color: var(--brand-white); font-family: 'Montserrat', sans-serif; 
         overflow-x: hidden; background-color: transparent; 
+        -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
       }
       h1, h2, h3 { font-family: 'GFS Baskerville', serif; font-weight: 400; margin: 0; }
       a { text-decoration: none; }
@@ -687,7 +697,7 @@ function renderAppHTML(title, subtitle, headerImages, albumsData, currentAlbum, 
       
       /* Parallax base container */
       .hero-parallax-wrapper { width: 100%; height: 100%; position: absolute; top: 0; left: 0; will-change: transform; }
-      .hero img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center; opacity: 0; transition: opacity 2s ease-in-out; filter: brightness(0.7) contrast(1.1) saturate(1.1); transform: scale(1.05); }
+      .hero img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center; opacity: 0; transition: opacity 2s ease-in-out; filter: brightness(0.7) contrast(1.1) saturate(1.1); transform: scale(1.05); pointer-events: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
       .hero img.active { opacity: 1; transform: scale(1.05); } 
 
       .container { max-width: 1440px; margin: 0 auto; padding: 60px 40px 100px; min-height: 50vh; position: relative; z-index: 5; transition: all 0.4s ease; }
